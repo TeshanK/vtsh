@@ -56,14 +56,14 @@ void vtsh_loop(void)
             size = 0;  /* Reset buffer size for getline */
         }
 
-        if (vtsh_read_line(&line, &size) != EXIT_SUCCESS) {
+        if (vtsh_read_line(&line, &size) != 0) {
             break;  /* Exit on read failure (EOF) */
         }
 
         char *tokens[NUM_TOKENS];
         vtsh_tokenize_input(&line, tokens);
 
-        if(vtsh_run(tokens) == EXIT_FAILURE) {
+        if(vtsh_run(tokens) == 1) {
             status = 0;  /* Exit shell if command returns failure */
         }
 
@@ -79,7 +79,7 @@ int vtsh_read_line(char **line, size_t *size)
 {
     if (getline(line, size, stdin) == -1) {
         perror("Reading input failed\n");
-        return EXIT_FAILURE;
+        return 1;
     }
 
     (*line)[strcspn(*line, "\n")] = '\0';  /* Remove trailing newline */
@@ -88,7 +88,7 @@ int vtsh_read_line(char **line, size_t *size)
         printf("\n");
     }
 
-    return EXIT_SUCCESS;
+    return 0;
 }
 
 /* Split input line into tokens (command and arguments) */
@@ -125,34 +125,35 @@ int vtsh_cd(char **args)
 int vtsh_run(char **args)
 {
     if (args[0] == NULL) {
-        return EXIT_SUCCESS;  /* Empty command */
+        return 0;  /* Empty command */
     }
     
-    if (strcmp(args[0], "exit") == 0) {
-        return EXIT_FAILURE;  /* Exit shell */
-    }
-
     if (strcmp(args[0], "cd") == 0) {
         vtsh_cd(args);
         return 0;
     }
 
+    if (strcmp(args[0], "exit") == 0) {
+        return 1;  /* Exit shell */
+    }
+
+    
     pid_t pid = fork();
 
     if (pid < 0) {
         fprintf(stderr, "fork failed\n");
-        exit(EXIT_FAILURE);
+        exit(1);
     } 
     else if (pid == 0) {
         /* Child process */
         execvp(args[0], args);
         perror("command execution failed");
-        exit(EXIT_FAILURE);
+        exit(1);
     } 
     else {
         /* Parent process */
         wait(NULL);  /* Wait for child to complete */
     }
 
-    return EXIT_SUCCESS;
+    return 0;
 }
