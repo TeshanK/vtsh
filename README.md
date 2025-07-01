@@ -38,7 +38,6 @@ vtsh/
 - Background execution (`&`)
 - Command history
 - Environment variable expansion
-- Input/output redirection
 - Redirections (`<`, `>`, `>>`)
 
 ## Makefile
