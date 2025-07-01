@@ -22,7 +22,7 @@ void vtsh_tokenize_input(char **, char **);
 int vtsh_run(char **);
 
 /* Main entry point */
-int main(int argc, char **argv)
+int main()
 {
     vtsh_loop();
     return 0;
@@ -75,7 +75,7 @@ int vtsh_read_line(char **line, size_t *size)
     (*line)[strcspn(*line, "\n")] = '\0';  /* Remove trailing newline */
 
     if(*line == NULL) {
-        printf("%s\n", *line);
+        printf("\n");
     }
 
     return EXIT_SUCCESS;
@@ -98,6 +98,19 @@ void vtsh_tokenize_input(char **line, char **tokens)
     tokens[i] = NULL;  /* NULL-terminate for execvp */
 }
 
+/* Builtin cd function */
+int vtsh_cd(char **args)
+{
+    if (args[1] == NULL) {
+        fprintf(stderr, "vtsh: expected argument to \"cd\"\n");
+    } else {
+        if (chdir(args[1]) != 0) {
+            perror("vtsh");
+        }
+    }
+    return 0;
+}
+
 /* Execute command (built-in or external) */
 int vtsh_run(char **args)
 {
@@ -107,6 +120,11 @@ int vtsh_run(char **args)
     
     if (strcmp(args[0], "exit") == 0) {
         return EXIT_FAILURE;  /* Exit shell */
+    }
+
+    if (strcmp(args[0], "cd") == 0) {
+        vtsh_cd(args);
+        return 0;
     }
 
     pid_t pid = fork();
