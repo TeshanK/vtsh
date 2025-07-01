@@ -7,36 +7,60 @@ A simple C shell implementation that executes basic commands.
 - Interactive prompt (`vtsh > `)
 - External command execution via fork/execvp
 - Space-delimited argument parsing
-- Built-in `exit` command
+- Built-in commands:
+  - `exit` - Terminates the shell
+  - `cd` - Changes directory
+- Simple build system with Makefile
 
 ## Project Structure
 
 ```
 vtsh/
-├── README.md
+├── Makefile        # Build configuration
+├── README.md       # Documentation
+├── build/          # Generated executable (after make)
+│   └── vtsh
 └── src/
-    ├── main.c
-    └── vtsh
+    └── main.c      # Source code
 ```
 
 ## How It Works
 
 1. Read input from user
 2. Split input into space-delimited tokens
-3. Execute built-in or external commands
+3. Execute commands:
+   - For built-ins (`cd`, `exit`): Handle directly in the shell
+   - For external commands: Create a child process with fork() and execute with execvp()
 
 ## Planned Features
 
-- Expansions (brace, parameter, arithmetic, etc.)
-- Quote handling
+- Pipe support
+- Background execution (`&`)
+- Command history
+- Environment variable expansion
+- Input/output redirection
 - Redirections (`<`, `>`, `>>`)
+
+## Makefile
+
+The project includes a Makefile with the following features:
+- Organized build structure with separate source and build directories
+- Compilation with warnings and optimizations (`-Wall -Wextra -O3`)
+- Clean target for easy project cleanup
 
 ## Building and Running
 
+Using the Makefile:
+
 ```bash
-cd vtsh/src
-gcc -o vtsh main.c
-./vtsh
+# Build the shell
+make
+
+# Run the shell
+./build/vtsh
+
+# Clean build files
+make clean
 ```
 
 ## Usage
@@ -44,6 +68,7 @@ gcc -o vtsh main.c
 ```
 vtsh > ls -la
 vtsh > pwd
+vtsh > cd /home
 vtsh > exit
 ```
 

@@ -24,7 +24,17 @@ int vtsh_run(char **);
 /* Main entry point */
 int main()
 {
+    printf("\nWelcome to VTSH - Very Tiny Shell\n");
+    printf("Type 'exit' to quit the shell.\n\n");
+
     vtsh_loop();
+
+    printf("Exiting VTSH. Goodbye!\n");
+    
+    // Ensure all output is flushed before exiting
+    fflush(stdout);
+    fflush(stderr);
+
     return 0;
 }
 
