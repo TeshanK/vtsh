@@ -25,7 +25,7 @@ int vtsh_run(char **);
 int main()
 {
     printf("\nWelcome to VTSH - Very Tiny Shell\n");
-    printf("Type 'exit' to quit the shell.\n\n");
+    printf("Type 'help' for information.\n\n");
 
     vtsh_loop();
 
@@ -121,6 +121,16 @@ int vtsh_cd(char **args)
     return 0;
 }
 
+/* Builtin help function */
+void vtsh_help()
+{
+    printf("\n");
+    printf(" 'cd' to navigate to folders.\n");
+    printf(" 'help' to get this help message.\n");
+    printf(" 'exit' to exit the shell.\n");
+    printf(" \nFor help with other commands use 'man' command.\n");
+}
+
 /* Execute command (built-in or external) */
 int vtsh_run(char **args)
 {
@@ -128,6 +138,11 @@ int vtsh_run(char **args)
         return 0;  /* Empty command */
     }
     
+    if (strcmp(args[0], "help") == 0) {
+        vtsh_help();
+        return 0;
+    }
+
     if (strcmp(args[0], "cd") == 0) {
         vtsh_cd(args);
         return 0;
