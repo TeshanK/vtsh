@@ -135,7 +135,7 @@ void vtsh_loop(void)
         }
 
         size = 0;  /* Reset buffer size for getline */
-        
+
         free(line);
         line = NULL;
     }
@@ -168,11 +168,17 @@ void vtsh_tokenize_input(char **line, char **tokens, int *output_redirect)
     int i = 0;
 
     while (token && (i < NUM_TOKENS - 1)) {
-        if (strcmp(token, ">") == 0) {
+        if ((strcmp(token, ">") == 0) | (strcmp(token, ">>") == 0)) {
+
+            int oflag = O_TRUNC; // overwrite output redirection
+            if (strcmp(token, ">>") == 0) {
+                oflag = O_APPEND; // appending output redirection
+            }
+            
             token = strtok(NULL, delims);
 
             if(token != NULL){
-                int fd = open(token, O_CREAT|O_WRONLY|O_TRUNC, 0644); // Owner read/write, group read, others read
+                int fd = open(token, O_CREAT|O_WRONLY|oflag, 0644); // Owner read/write, group read, others read
                 if (fd == -1) {
                     fprintf(stderr, "failed to open file %s\n", token);
                 } else {
