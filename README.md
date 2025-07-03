@@ -10,6 +10,7 @@ A simple C shell implementation that executes basic commands.
 - Built-in commands:
   - `exit` - Terminates the shell
   - `cd` - Changes directory
+  - `help` - Displays help message
 - Simple build system with Makefile
 
 ## Project Structure
