@@ -32,7 +32,7 @@ char *builtin_str[] = {
     "exit"
 };
 
-int (*built_func[]) (char **) = {
+int (*builtin_func[]) (char **) = {
     &vtsh_cd,
     &vtsh_help,
     &vtsh_exit
@@ -200,7 +200,7 @@ int vtsh_run(char **args)
     /* Run builtin commands*/
     for (int i = 0; i < vtsh_num_builtins(); i++){
         if (strcmp(args[0], builtin_str[i]) == 0) {
-            return (*built_func[i])(args);
+            return (*builtin_func[i])(args);
         }
     }
 
