@@ -7,6 +7,7 @@ A simple C shell implementation that executes basic commands.
 - Interactive prompt (`vtsh > `)
 - External command execution via fork/execvp
 - Space-delimited argument parsing
+- Output redirection with `>` and `>>` operators
 - Built-in commands:
   - `exit` - Terminates the shell
   - `cd` - Changes directory
@@ -28,10 +29,11 @@ vtsh/
 ## How It Works
 
 1. Read input from user
-2. Split input into space-delimited tokens
+2. Split input into space-delimited tokens and process redirection operators (`>`, `>>`)
 3. Execute commands:
-   - For built-ins (`cd`, `exit`): Handle directly in the shell
+   - For built-ins (`cd`, `exit`, `help`): Handle directly in the shell
    - For external commands: Create a child process with fork() and execute with execvp()
+4. Redirect output if requested using `>` (overwrite) or `>>` (append)
 
 ## Planned Features
 
@@ -39,7 +41,7 @@ vtsh/
 - Background execution (`&`)
 - Command history
 - Environment variable expansion
-- Redirections (`<`, `>`, `>>`)
+- Input redirection (`<`)
 
 ## Makefile
 
@@ -69,9 +71,8 @@ make clean
 vtsh > ls -la
 vtsh > pwd
 vtsh > cd /home
+vtsh > ls -l > files.txt       # Redirect output to file (overwrite)
+vtsh > echo hello >> files.txt # Append output to file
+vtsh > help > help.txt         # Built-in commands support redirection too
 vtsh > exit
 ```
-
-## Author
-
-Teshan Kannangara
