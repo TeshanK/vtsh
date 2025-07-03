@@ -4,7 +4,6 @@
  * A simple shell that reads user input, parses commands, and executes programs.
  * 
  * Author: Teshan Kannangara
- * Date: July 1, 2025
  */
 
 #include <stdio.h>
@@ -67,6 +66,7 @@ int vtsh_cd(char **args)
 /* Builtin exit function */
 int vtsh_exit(char **)
 {
+    printf("Exiting VTSH. Goodbye!\n");
     return 1;
 }
 
@@ -88,8 +88,6 @@ int main()
     print_welcome();
 
     vtsh_loop();
-
-    printf("Exiting VTSH. Goodbye!\n");
     
     // Ensure all output is flushed before exiting
     fflush(stdout);
@@ -230,7 +228,29 @@ int vtsh_run(char **args, int output_redirect)
     /* Run builtin commands*/
     for (int i = 0; i < vtsh_num_builtins(); i++){
         if (strcmp(args[0], builtin_str[i]) == 0) {
-            return (*builtin_func[i])(args);
+
+            int original_stdout = 1;
+            int result = 0;
+
+
+            if (output_redirect != STDOUT_FILENO) {
+
+                /* Save the original stdout file descriptor to be restored later*/
+                original_stdout = dup(STDOUT_FILENO);
+
+                /* Redirect stdout to the file */
+                dup2(output_redirect, STDOUT_FILENO);
+            }
+
+            result = (*builtin_func[i])(args);
+
+            /* Restore the original stdout*/
+            if (output_redirect != STDOUT_FILENO) {
+                dup2(original_stdout, STDOUT_FILENO);
+                close(output_redirect);
+            }
+
+            return result;
         }
     }
 
