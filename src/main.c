@@ -21,11 +21,70 @@ int vtsh_read_line(char **, size_t *);
 void vtsh_tokenize_input(char **, char **);
 int vtsh_run(char **);
 
-/* Main entry point */
-int main()
+/* Built-in commands */
+int vtsh_cd(char **);
+int vtsh_help(char **);
+int vtsh_exit(char **);
+
+char *builtin_str[] = {
+    "cd",
+    "help",
+    "exit"
+};
+
+int (*built_func[]) (char **) = {
+    &vtsh_cd,
+    &vtsh_help,
+    &vtsh_exit
+};
+
+int vtsh_num_builtins()
+{
+    return sizeof(builtin_str) / sizeof(char **);
+}
+
+void print_welcome()
 {
     printf("\nWelcome to VTSH - Very Tiny Shell\n");
     printf("Type 'help' for information.\n\n");
+}
+
+/* Builtin cd function */
+int vtsh_cd(char **args)
+{
+    if (args[1] == NULL) {
+        fprintf(stderr, "vtsh: expected argument to \"cd\"\n");
+    } else {
+        if (chdir(args[1]) != 0) {
+            perror("vtsh");
+            return -1;
+        }
+    }
+    return 0;
+}
+
+/* Builtin exit function */
+int vtsh_exit(char **)
+{
+    return 1;
+}
+
+/* Builtin help function */
+int vtsh_help(char **)
+{
+    printf("\n");
+    printf(" 'cd' to navigate to folders.\n");
+    printf(" 'help' to get this help message.\n");
+    printf(" 'exit' to exit the shell.\n");
+    printf(" \nFor help with other commands use 'man' command.\n");
+    return 0;
+}
+
+
+/* Main entry point */
+int main()
+{
+    print_welcome();
 
     vtsh_loop();
 
@@ -108,51 +167,9 @@ void vtsh_tokenize_input(char **line, char **tokens)
     tokens[i] = NULL;  /* NULL-terminate for execvp */
 }
 
-/* Builtin cd function */
-int vtsh_cd(char **args)
+/* Launch non-builtin programs*/
+int vtsh_launch(char **args)
 {
-    if (args[1] == NULL) {
-        fprintf(stderr, "vtsh: expected argument to \"cd\"\n");
-    } else {
-        if (chdir(args[1]) != 0) {
-            perror("vtsh");
-        }
-    }
-    return 0;
-}
-
-/* Builtin help function */
-void vtsh_help()
-{
-    printf("\n");
-    printf(" 'cd' to navigate to folders.\n");
-    printf(" 'help' to get this help message.\n");
-    printf(" 'exit' to exit the shell.\n");
-    printf(" \nFor help with other commands use 'man' command.\n");
-}
-
-/* Execute command (built-in or external) */
-int vtsh_run(char **args)
-{
-    if (args[0] == NULL) {
-        return 0;  /* Empty command */
-    }
-    
-    if (strcmp(args[0], "help") == 0) {
-        vtsh_help();
-        return 0;
-    }
-
-    if (strcmp(args[0], "cd") == 0) {
-        vtsh_cd(args);
-        return 0;
-    }
-
-    if (strcmp(args[0], "exit") == 0) {
-        return 1;  /* Exit shell */
-    }
-
-    
     pid_t pid = fork();
 
     if (pid < 0) {
@@ -171,4 +188,22 @@ int vtsh_run(char **args)
     }
 
     return 0;
+}
+
+/* Execute command (built-in or external) */
+int vtsh_run(char **args)
+{
+    if (args[0] == NULL) {
+        return 0; /* Empty command */
+    }
+
+    /* Run builtin commands*/
+    for (int i = 0; i < vtsh_num_builtins(); i++){
+        if (strcmp(args[0], builtin_str[i]) == 0) {
+            return (*built_func[i])(args);
+        }
+    }
+
+    /* Run external commands*/
+    return vtsh_launch(args);
 }
