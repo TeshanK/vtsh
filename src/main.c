@@ -11,6 +11,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
+#include <fcntl.h>
 #include <sys/wait.h>
 
 #define NUM_TOKENS 64  /* Max number of command arguments */
@@ -18,8 +19,8 @@
 /* Function prototypes */
 void vtsh_loop(void);                     
 int vtsh_read_line(char **, size_t *);    
-void vtsh_tokenize_input(char **, char **);
-int vtsh_run(char **);
+void vtsh_tokenize_input(char **, char **, int *);
+int vtsh_run(char **, int);
 
 /* Built-in commands */
 int vtsh_cd(char **);
@@ -40,7 +41,7 @@ int (*builtin_func[]) (char **) = {
 
 int vtsh_num_builtins()
 {
-    return sizeof(builtin_str) / sizeof(char **);
+    return sizeof(builtin_str) / sizeof(char *);
 }
 
 void print_welcome()
@@ -103,6 +104,7 @@ void vtsh_loop(void)
     char *line = NULL;
     size_t size = 0;
     int status = 1;  /* Shell running status */
+    int output_redirect = STDOUT_FILENO;  /* File descriptor for output redirection */
 
     while (status) {
         printf("vtsh > ");
@@ -112,7 +114,6 @@ void vtsh_loop(void)
         if (line != NULL) {
             free(line);
             line = NULL;
-            size = 0;  /* Reset buffer size for getline */
         }
 
         if (vtsh_read_line(&line, &size) != 0) {
@@ -120,13 +121,20 @@ void vtsh_loop(void)
         }
 
         char *tokens[NUM_TOKENS];
-        vtsh_tokenize_input(&line, tokens);
+        vtsh_tokenize_input(&line, tokens, &output_redirect);
 
-        if(vtsh_run(tokens) == 1) {
+        if(vtsh_run(tokens, output_redirect) == 1) {
             status = 0;  /* Exit shell if command returns failure */
         }
 
         printf("\n");
+
+        if (output_redirect != STDOUT_FILENO) {
+            close(output_redirect);
+            output_redirect = STDOUT_FILENO;
+        }
+
+        size = 0;  /* Reset buffer size for getline */
         
         free(line);
         line = NULL;
@@ -151,7 +159,7 @@ int vtsh_read_line(char **line, size_t *size)
 }
 
 /* Split input line into tokens (command and arguments) */
-void vtsh_tokenize_input(char **line, char **tokens)
+void vtsh_tokenize_input(char **line, char **tokens, int *output_redirect)
 {
     char *token = NULL;
     char *delims = " ";
@@ -160,6 +168,21 @@ void vtsh_tokenize_input(char **line, char **tokens)
     int i = 0;
 
     while (token && (i < NUM_TOKENS - 1)) {
+        if (strcmp(token, ">") == 0) {
+            token = strtok(NULL, delims);
+
+            if(token != NULL){
+                int fd = open(token, O_CREAT|O_WRONLY|O_TRUNC, 0644); // Owner read/write, group read, others read
+                if (fd == -1) {
+                    fprintf(stderr, "failed to open file %s\n", token);
+                } else {
+                    *output_redirect = fd;
+                }
+                break;
+            } else {
+                fprintf(stderr, "please specify the file to redirect output");
+            }
+        }
         tokens[i++] = token;
         token = strtok(NULL, delims);
     }
@@ -168,7 +191,7 @@ void vtsh_tokenize_input(char **line, char **tokens)
 }
 
 /* Launch non-builtin programs*/
-int vtsh_launch(char **args)
+int vtsh_launch(char **args, int output_redirect)
 {
     pid_t pid = fork();
 
@@ -178,6 +201,7 @@ int vtsh_launch(char **args)
     } 
     else if (pid == 0) {
         /* Child process */
+        dup2(output_redirect, STDOUT_FILENO);
         execvp(args[0], args);
         perror("command execution failed");
         exit(1);
@@ -191,7 +215,7 @@ int vtsh_launch(char **args)
 }
 
 /* Execute command (built-in or external) */
-int vtsh_run(char **args)
+int vtsh_run(char **args, int output_redirect)
 {
     if (args[0] == NULL) {
         return 0; /* Empty command */
@@ -205,5 +229,5 @@ int vtsh_run(char **args)
     }
 
     /* Run external commands*/
-    return vtsh_launch(args);
+    return vtsh_launch(args, output_redirect);
 }
