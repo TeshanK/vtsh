@@ -4,7 +4,7 @@ A simple C shell implementation that executes basic commands.
 
 ## Features
 
-- Interactive prompt (`vtsh > `)
+- Enhanced interactive prompt with GNU Readline support
 - External command execution via fork/execvp
 - Space-delimited argument parsing
 - Input/output redirection with `<`, `>`, and `>>` operators
@@ -50,6 +50,19 @@ vtsh/
 Using the Makefile:
 
 ```bash
+# Install readline development package (if not already installed)
+sudo apt-get install libreadline-dev  # For Debian/Ubuntu
+# or
+sudo dnf install readline-devel       # For Fedora/RHEL
+# or
+sudo pacman -S readline              # For Arch Linux
+
+# Clone the repository
+git clone https://github.com/TeshanK/vtsh.git 
+
+# Navigate to the project directory
+cd vtsh
+
 # Build the shell
 make
 

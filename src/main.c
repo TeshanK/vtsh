@@ -13,13 +13,15 @@
 #include <string.h>
 #include <fcntl.h>
 #include <sys/wait.h>
+#include <readline/readline.h>
 
 #define NUM_TOKENS 64  /* Max number of command arguments */
 
 /* Function prototypes */
 void vtsh_loop(void);                     
-int vtsh_read_line(char **, size_t *);    
+int vtsh_read_line(char **);    
 int vtsh_tokenize_input(char **, char **, int *, int *);
+int vtsh_launch(char **, int, int);
 int vtsh_run(char **, int, int);
 
 /* Built-in commands */
@@ -82,7 +84,6 @@ int vtsh_help(char **)
     return 0;
 }
 
-
 /* Main entry point */
 int main()
 {
@@ -101,13 +102,11 @@ int main()
 void vtsh_loop(void)
 {
     char *line = NULL;
-    size_t size = 0;
     int status = 1;  /* Shell running status */
     int output_redirect = STDOUT_FILENO;  /* File descriptor for output redirection */
     int input_redirect = STDIN_FILENO;  /* File descriptor for input redirection */
 
     while (status) {
-        printf("vtsh > ");
         fflush(stdout);
 
         /* Clean up previous buffer */
@@ -116,7 +115,7 @@ void vtsh_loop(void)
             line = NULL;
         }
 
-        if (vtsh_read_line(&line, &size) != 0) {
+        if (vtsh_read_line(&line) != 0) {
             break;  /* Exit on read failure (EOF) */
         }
 
@@ -140,17 +139,16 @@ void vtsh_loop(void)
             input_redirect = STDIN_FILENO;
         }
 
-        size = 0;  /* Reset buffer size for getline */
-
         free(line);
         line = NULL;
     }
 }
 
 /* Read input line from user, removing trailing newline */
-int vtsh_read_line(char **line, size_t *size)
+int vtsh_read_line(char **line)
 {
-    if (getline(line, size, stdin) == -1) {
+    *line = readline("vtsh> ");
+    if (*line == NULL) {
         perror("Reading input failed\n");
         return 1;
     }

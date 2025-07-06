@@ -6,7 +6,7 @@ SRC = $(SRC_DIR)/main.c
 TARGET = $(BUILD_DIR)/vtsh
 
 CC = gcc
-CFLAGS = -Wall -Wextra -O3
+CFLAGS = -lreadline -Wall -Wextra -O3
 
 all: $(BUILD_DIR) $(TARGET)
 
