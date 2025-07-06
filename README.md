@@ -7,7 +7,7 @@ A simple C shell implementation that executes basic commands.
 - Interactive prompt (`vtsh > `)
 - External command execution via fork/execvp
 - Space-delimited argument parsing
-- Output redirection with `>` and `>>` operators
+- Input/output redirection with `<`, `>`, and `>>` operators
 - Built-in commands:
   - `exit` - Terminates the shell
   - `cd` - Changes directory
@@ -29,11 +29,14 @@ vtsh/
 ## How It Works
 
 1. Read input from user
-2. Split input into space-delimited tokens and process redirection operators (`>`, `>>`)
+2. Split input into space-delimited tokens and process redirection operators (`<`, `>`, `>>`)
 3. Execute commands:
    - For built-ins (`cd`, `exit`, `help`): Handle directly in the shell
    - For external commands: Create a child process with fork() and execute with execvp()
-4. Redirect output if requested using `>` (overwrite) or `>>` (append)
+4. Handle redirections:
+   - Input redirection (`<`): Read command input from a file
+   - Output redirection (`>`): Write command output to a file (overwrite)
+   - Append redirection (`>>`): Append command output to a file
 
 ## Planned Features
 
@@ -41,14 +44,6 @@ vtsh/
 - Background execution (`&`)
 - Command history
 - Environment variable expansion
-- Input redirection (`<`)
-
-## Makefile
-
-The project includes a Makefile with the following features:
-- Organized build structure with separate source and build directories
-- Compilation with warnings and optimizations (`-Wall -Wextra -O3`)
-- Clean target for easy project cleanup
 
 ## Building and Running
 
@@ -74,5 +69,6 @@ vtsh > cd /home
 vtsh > ls -l > files.txt       # Redirect output to file (overwrite)
 vtsh > echo hello >> files.txt # Append output to file
 vtsh > help > help.txt         # Built-in commands support redirection too
+vtsh > sort < data.txt         # Read input from file
 vtsh > exit
 ```
