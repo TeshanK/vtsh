@@ -6,6 +6,7 @@
  * Author: Teshan Kannangara
  */
 
+#define _POSIX_C_SOURCE 200809L
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -18,8 +19,8 @@
 /* Function prototypes */
 void vtsh_loop(void);                     
 int vtsh_read_line(char **, size_t *);    
-void vtsh_tokenize_input(char **, char **, int *);
-int vtsh_run(char **, int);
+int vtsh_tokenize_input(char **, char **, int *, int *);
+int vtsh_run(char **, int, int);
 
 /* Built-in commands */
 int vtsh_cd(char **);
@@ -103,6 +104,7 @@ void vtsh_loop(void)
     size_t size = 0;
     int status = 1;  /* Shell running status */
     int output_redirect = STDOUT_FILENO;  /* File descriptor for output redirection */
+    int input_redirect = STDIN_FILENO;  /* File descriptor for input redirection */
 
     while (status) {
         printf("vtsh > ");
@@ -119,10 +121,11 @@ void vtsh_loop(void)
         }
 
         char *tokens[NUM_TOKENS];
-        vtsh_tokenize_input(&line, tokens, &output_redirect);
 
-        if(vtsh_run(tokens, output_redirect) == 1) {
-            status = 0;  /* Exit shell if command returns failure */
+        if(vtsh_tokenize_input(&line, tokens, &output_redirect, &input_redirect) == 0) {
+            if(vtsh_run(tokens, output_redirect, input_redirect) == 1) {
+                status = 0;  /* Exit shell if command returns failure */
+            }
         }
 
         printf("\n");
@@ -130,6 +133,11 @@ void vtsh_loop(void)
         if (output_redirect != STDOUT_FILENO) {
             close(output_redirect);
             output_redirect = STDOUT_FILENO;
+        }
+
+        if (input_redirect != STDIN_FILENO) {
+            close(input_redirect);
+            input_redirect = STDIN_FILENO;
         }
 
         size = 0;  /* Reset buffer size for getline */
@@ -157,7 +165,7 @@ int vtsh_read_line(char **line, size_t *size)
 }
 
 /* Split input line into tokens (command and arguments) */
-void vtsh_tokenize_input(char **line, char **tokens, int *output_redirect)
+int vtsh_tokenize_input(char **line, char **tokens, int *output_redirect, int *input_redirect)
 {
     char *token = NULL;
     char *delims = " ";
@@ -167,6 +175,7 @@ void vtsh_tokenize_input(char **line, char **tokens, int *output_redirect)
 
     while (token && (i < NUM_TOKENS - 1)) {
         if ((strcmp(token, ">") == 0) | (strcmp(token, ">>") == 0)) {
+            /* Output redirection */
 
             int oflag = O_TRUNC; // overwrite output redirection
             if (strcmp(token, ">>") == 0) {
@@ -179,12 +188,32 @@ void vtsh_tokenize_input(char **line, char **tokens, int *output_redirect)
                 int fd = open(token, O_CREAT|O_WRONLY|oflag, 0644); // Owner read/write, group read, others read
                 if (fd == -1) {
                     fprintf(stderr, "failed to open file %s\n", token);
+                    return 1;
                 } else {
                     *output_redirect = fd;
                 }
                 break;
             } else {
-                fprintf(stderr, "please specify the file to redirect output");
+                fprintf(stderr, "vtsh: please specify the file to redirect output\n");
+                return 1;
+            }
+        } else if (strcmp(token, "<") == 0) {
+            /* Input redirection */
+
+            token = strtok(NULL, delims);
+
+            if (token != NULL) {
+                int fd = open(token, O_RDONLY);
+                if (fd == -1) {
+                    fprintf(stderr, "failed to open file %s\n", token);
+                    return 1;
+                } else {
+                    *input_redirect = fd;
+                }
+                break;
+            } else {
+                fprintf(stderr, "vtsh: please specify the file to redirect input from\n");
+                return 1;
             }
         }
         tokens[i++] = token;
@@ -192,10 +221,11 @@ void vtsh_tokenize_input(char **line, char **tokens, int *output_redirect)
     }
 
     tokens[i] = NULL;  /* NULL-terminate for execvp */
+    return 0;
 }
 
 /* Launch non-builtin programs*/
-int vtsh_launch(char **args, int output_redirect)
+int vtsh_launch(char **args, int output_redirect, int input_redirect)
 {
     pid_t pid = fork();
 
@@ -205,8 +235,12 @@ int vtsh_launch(char **args, int output_redirect)
     } 
     else if (pid == 0) {
         /* Child process */
+
         dup2(output_redirect, STDOUT_FILENO);
+        dup2(input_redirect, STDIN_FILENO);
+
         execvp(args[0], args);
+
         perror("command execution failed");
         exit(1);
     } 
@@ -219,7 +253,7 @@ int vtsh_launch(char **args, int output_redirect)
 }
 
 /* Execute command (built-in or external) */
-int vtsh_run(char **args, int output_redirect)
+int vtsh_run(char **args, int output_redirect, int input_redirect)
 {
     if (args[0] == NULL) {
         return 0; /* Empty command */
@@ -229,17 +263,27 @@ int vtsh_run(char **args, int output_redirect)
     for (int i = 0; i < vtsh_num_builtins(); i++){
         if (strcmp(args[0], builtin_str[i]) == 0) {
 
-            int original_stdout = 1;
+            int original_stdout = STDOUT_FILENO;
+            int original_stdin = STDIN_FILENO;
             int result = 0;
 
 
             if (output_redirect != STDOUT_FILENO) {
 
-                /* Save the original stdout file descriptor to be restored later*/
+                /* Save the original stdout file descriptor to be restored later */
                 original_stdout = dup(STDOUT_FILENO);
 
                 /* Redirect stdout to the file */
                 dup2(output_redirect, STDOUT_FILENO);
+            }
+
+            if (input_redirect != STDIN_FILENO) {
+
+                /* Save the original stdin file descriptor to be restored later */
+                original_stdin = dup(STDIN_FILENO);
+
+                /* Redirect stdin to the file */
+                dup2(input_redirect, STDIN_FILENO);
             }
 
             result = (*builtin_func[i])(args);
@@ -250,10 +294,16 @@ int vtsh_run(char **args, int output_redirect)
                 close(output_redirect);
             }
 
+            /* Restore the original stdin */
+            if (input_redirect != STDIN_FILENO) {
+                dup2(original_stdin, STDIN_FILENO);
+                close(input_redirect);
+            }
+
             return result;
         }
     }
 
     /* Run external commands*/
-    return vtsh_launch(args, output_redirect);
+    return vtsh_launch(args, output_redirect, input_redirect);
 }
