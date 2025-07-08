@@ -14,6 +14,7 @@
 #include <fcntl.h>
 #include <sys/wait.h>
 #include <readline/readline.h>
+#include <readline/history.h>
 
 #define NUM_TOKENS 64  /* Max number of command arguments */
 
@@ -87,6 +88,12 @@ int vtsh_help(char **)
 /* Main entry point */
 int main()
 {
+    // Auto-complete paths when the tab key is hit
+    rl_bind_key('\t', rl_complete);
+    
+    // Enable command history
+    using_history();
+
     print_welcome();
 
     vtsh_loop();
@@ -157,6 +164,9 @@ int vtsh_read_line(char **line)
 
     if(*line == NULL) {
         printf("\n");
+    } else {
+        // Add input to readline history
+        add_history(*line);
     }
 
     return 0;
