@@ -1,87 +1,73 @@
-# VTSH - Very Tiny Shell
+# VTSH - A Very Tiny Shell
 
 A simple C shell implementation that executes basic commands.
 
 ## Features
 
-- Enhanced interactive prompt with GNU Readline support
-- External command execution via fork/execvp
-- Space-delimited argument parsing
-- Input/output redirection with `<`, `>`, and `>>` operators
-- Built-in commands:
-  - `exit` - Terminates the shell
-  - `cd` - Changes directory
-  - `help` - Displays help message
-- Simple build system with Makefile
+- **Interactive Command Line**: Uses GNU Readline for a user-friendly prompt.
+- **Command History**: Navigate through previous commands using arrow keys.
+- **Tab Completion**: Autocompletes file paths and commands.
+- **External Commands**: Executes any command from the system's `PATH` (e.g., `ls`, `grep`).
+- **Built-in Commands**:
+  - `cd`: Change the current directory.
+  - `help`: Display a list of built-in commands.
+  - `exit`: Terminate the shell.
+- **I/O Redirection**:
+  - `>`: Redirect output to a file (overwrite).
+  - `>>`: Append output to a file.
+  - `<`: Read input from a file.
 
 ## Project Structure
 
 ```
 vtsh/
 ├── Makefile        # Build configuration
-├── README.md       # Documentation
-├── build/          # Generated executable (after make)
+├── README.md       # README file
+├── build/          # Compiled executable appears here
 │   └── vtsh
 └── src/
-    └── main.c      # Source code
+    └── main.c      # Main source code
 ```
-
-## How It Works
-
-1. Read input from user
-2. Split input into space-delimited tokens and process redirection operators (`<`, `>`, `>>`)
-3. Execute commands:
-   - For built-ins (`cd`, `exit`, `help`): Handle directly in the shell
-   - For external commands: Create a child process with fork() and execute with execvp()
-4. Handle redirections:
-   - Input redirection (`<`): Read command input from a file
-   - Output redirection (`>`): Write command output to a file (overwrite)
-   - Append redirection (`>>`): Append command output to a file
-
-## Planned Features
-
-- Pipe support
-- Background execution (`&`)
-- Command history
-- Environment variable expansion
 
 ## Building and Running
 
-Using the Makefile:
+1.  **Install Dependencies**
 
-```bash
-# Install readline development package (if not already installed)
-sudo apt-get install libreadline-dev  # For Debian/Ubuntu
-# or
-sudo dnf install readline-devel       # For Fedora/RHEL
-# or
-sudo pacman -S readline              # For Arch Linux
+    You need `gcc` and `make` to build the shell. You also need the GNU Readline library.
 
-# Clone the repository
-git clone https://github.com/TeshanK/vtsh.git 
+    ```bash
+    # For Debian/Ubuntu
+    sudo apt-get update
+    sudo apt-get install build-essential libreadline-dev
 
-# Navigate to the project directory
-cd vtsh
+    # For Fedora/RHEL
+    sudo dnf groupinstall "Development Tools"
+    sudo dnf install readline-devel
 
-# Build the shell
-make
+    # For Arch Linux
+    sudo pacman -S base-devel readline
+    ```
 
-# Run the shell
-./build/vtsh
+2.  **Clone and Build**
 
-# Clean build files
-make clean
-```
+    ```bash
+    # Clone the repository
+    git clone https://github.com/TeshanK/vtsh.git
+    cd vtsh
 
-## Usage
+    # Build the shell
+    make
+    ```
 
-```
-vtsh > ls -la
-vtsh > pwd
-vtsh > cd /home
-vtsh > ls -l > files.txt       # Redirect output to file (overwrite)
-vtsh > echo hello >> files.txt # Append output to file
-vtsh > help > help.txt         # Built-in commands support redirection too
-vtsh > sort < data.txt         # Read input from file
-vtsh > exit
-```
+3.  **Run the Shell**
+
+    ```bash
+    ./build/vtsh
+    ```
+
+4.  **Clean Up**
+
+    ```bash
+    # Remove the build directory and executable
+    make clean
+    ```
