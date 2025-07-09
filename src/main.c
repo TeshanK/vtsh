@@ -12,6 +12,7 @@
 #include <unistd.h>
 #include <string.h>
 #include <fcntl.h>
+#include <signal.h>
 #include <sys/wait.h>
 #include <readline/readline.h>
 #include <readline/history.h>
@@ -88,6 +89,21 @@ int vtsh_help(char **)
 /* Main entry point */
 int main()
 {
+
+    // Signal handling for Ctrl+C and Ctrl+Z
+    struct sigaction sa;
+    sa.sa_handler = SIG_IGN;
+    sa.sa_flags = SA_RESTART;
+    if (sigaction(SIGINT, &sa, NULL) == -1) {
+        perror("vtsh");
+        exit(1);
+    }
+
+    if (sigaction(SIGTSTP, &sa, NULL) == -1) {
+        perror("vtsh");
+        exit(1);
+    }
+
     // Auto-complete paths when the tab key is hit
     rl_bind_key('\t', rl_complete);
     
