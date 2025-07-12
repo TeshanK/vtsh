@@ -31,21 +31,20 @@ int vtsh_cd(char **);
 int vtsh_help(char **);
 int vtsh_exit(char **);
 
-char *builtin_str[] = {
-    "cd",
-    "help",
-    "exit"
-};
+typedef struct {
+    char builtin_name[1024];
+    int (*builtin_func)(char **);
+} builtin_t;
 
-int (*builtin_func[]) (char **) = {
-    &vtsh_cd,
-    &vtsh_help,
-    &vtsh_exit
+static builtin_t builtins[] = {
+    {"cd", &vtsh_cd},
+    {"help", &vtsh_help},
+    {"exit", &vtsh_exit}
 };
 
 int vtsh_num_builtins()
 {
-    return sizeof(builtin_str) / sizeof(char *);
+    return sizeof(builtins) / sizeof(builtin_t);
 }
 
 void print_welcome()
@@ -285,7 +284,7 @@ int vtsh_run(char **args, int output_redirect, int input_redirect)
 
     /* Run builtin commands*/
     for (int i = 0; i < vtsh_num_builtins(); i++){
-        if (strcmp(args[0], builtin_str[i]) == 0) {
+        if (strcmp(args[0], builtins[i].builtin_name) == 0) {
 
             int original_stdout = STDOUT_FILENO;
             int original_stdin = STDIN_FILENO;
@@ -310,8 +309,7 @@ int vtsh_run(char **args, int output_redirect, int input_redirect)
                 dup2(input_redirect, STDIN_FILENO);
             }
 
-            result = (*builtin_func[i])(args);
-
+            result = builtins[i].builtin_func(args);
             /* Restore the original stdout*/
             if (output_redirect != STDOUT_FILENO) {
                 dup2(original_stdout, STDOUT_FILENO);
