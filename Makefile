@@ -15,6 +15,7 @@ all: $(BUILD_DIR) $(TARGET)
 $(TARGET): $(OBJECTS)
 	@echo "Linking..."
 	@$(CC) $(OBJECTS) $(LDFLAGS) -o $@
+	@rm -f $(OBJECTS)
 	@echo "Done!"
 
 $(BUILD_DIR)/%.o: $(SRC_DIR)/%.c
